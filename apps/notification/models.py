@@ -1,42 +1,37 @@
-import httpx
 from django.db import models
 from apps.service.models import Service
+
+all_channels = {
+    "bark": "Bark",
+    "email": "Email",
+    "telegram": "Telegram",
+}
 
 
 class NotificationChannel(models.Model):
     name = models.CharField(max_length=255, unique=True)
     details = models.JSONField()
-
-    class Meta:
-        abstract = True
+    type = models.TextChoices(
+        "NotificationType", [(k, v) for k, v in all_channels.items()]
+    )
 
     def __str__(self):
         return self.name
 
     def send_notification(self, service, message):
-        raise NotImplementedError("Method not implemented")
+        if self.type == "telegram":
+            from apps.notification.notify_services.telegram import Telegram
 
+            telegram = Telegram(**self.details)
+            return telegram.send_notification(service, message)
+        elif self.type == "bark":
+            from apps.notification.notify_services.bark import Bark
 
-class BarkChannel(NotificationChannel):
-    endpoint = models.URLField(max_length=255, default="https://api.day.app")
-
-    def send_notification(self, service, message):
-        prepared_message = f"{service.name} - {message}"
-        # Send the notification to the bark server
-        # get the response and return it
-        with httpx.Client(http2=True) as client:
-            response = client.post(
-                f"{self.endpoint}/UptimeMonitor alert/{prepared_message}",
-                headers=self._headers,
-                json=message,
-            )
-            if not response.is_success:
-                return False
-            return True
+            bark = Bark(**self.details)
+            return bark.send_notification(service, message)
 
 
 class NotificationLog(models.Model):
-    channel = models.ForeignKey(NotificationChannel, on_delete=models.CASCADE)
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     message = models.TextField("Notification Message", blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
