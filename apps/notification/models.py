@@ -1,18 +1,19 @@
 from django.db import models
 from apps.service.models import Service
 
-all_channels = {
-    "bark": "Bark",
-    "email": "Email",
-    "telegram": "Telegram",
-}
+
+class NotificationType(models.TextChoices):
+    TELEGRAM = "telegram", "Telegram"
+    BARK = "bark", "Bark"
 
 
 class NotificationChannel(models.Model):
     name = models.CharField(max_length=255, unique=True)
     details = models.JSONField()
-    type = models.TextChoices(
-        "NotificationType", [(k, v) for k, v in all_channels.items()]
+    type = models.CharField(
+        max_length=50,
+        choices=NotificationType.choices,
+        default=NotificationType.BARK,
     )
 
     def __str__(self):
