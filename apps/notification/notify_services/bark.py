@@ -6,6 +6,13 @@ class Bark(pydantic.BaseModel):
     bark_endpoint: str
     message: str
 
+    # check if the bark endpoint is valid url
+    @pydantic.field_validator("bark_endpoint")
+    def check_bark_endpoint(cls, v):
+        if not v.endswith("/"):  # add a trailing slash if it doesn't exist
+            v = f"{v}/"
+        return v
+
     def send_notification(self, service, message):
         endpoint = self.bark_endpoint
         prepared_message = f"{service.name} - {message}"
@@ -13,7 +20,7 @@ class Bark(pydantic.BaseModel):
         # get the response and return it
         with httpx.Client(http2=True) as client:
             response = client.post(
-                f"{self.endpoint}/UptimeMonitor alert/{prepared_message}",
+                f"{endpoint}/UptimeMonitor alert/{prepared_message}",
                 headers=self._headers,
                 json=message,
             )

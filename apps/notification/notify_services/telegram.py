@@ -7,10 +7,11 @@ class Telegram(pydantic.BaseModel):
     chat_id: str
 
     def send_notification(self, service, message):
+        prepared_message = f"{service.name} - {message}"
         with httpx.Client(http2=True) as client:
             response = client.post(
                 f"https://api.telegram.org/bot{self.token}/sendMessage",
-                json={"chat_id": self.chat_id, "text": message},
+                json={"chat_id": self.chat_id, "text": prepared_message},
             )
             if not response.is_success:
                 return False
