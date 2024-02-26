@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import NotificationChannel, NotificationLog
 
-# Register your models here.
+admin.site.register(NotificationChannel)
+admin.site.register(NotificationLog)
