@@ -14,5 +14,5 @@ class Telegram(pydantic.BaseModel):
                 json={"chat_id": self.chat_id, "text": prepared_message},
             )
             if not response.is_success:
-                return False
+                raise ValueError(f"Failed to send message: {response.text}")
             return True

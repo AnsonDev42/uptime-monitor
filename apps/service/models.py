@@ -1,6 +1,11 @@
 from django.db import models
 
 
+class monitoring_type(models.TextChoices):
+    HTTP = "http", "HTTP"
+    PING = "ping", "PING"
+
+
 class Service(models.Model):
     """
     Service model stores all the details of a monitor service that is being created.
@@ -15,6 +20,9 @@ class Service(models.Model):
     is_active = models.BooleanField(default=True)
     notification_channel = models.ManyToManyField(
         "notification.NotificationChannel", blank=True
+    )
+    monitoring_type = models.CharField(
+        max_length=50, default="http", choices=monitoring_type.choices
     )
 
     def __str__(self):

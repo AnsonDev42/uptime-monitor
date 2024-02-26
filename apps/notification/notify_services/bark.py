@@ -9,9 +9,7 @@ class Bark(pydantic.BaseModel):
     # check if the bark endpoint is valid url
     @pydantic.field_validator("bark_endpoint")
     def check_bark_endpoint(cls, v):
-        if not v.endswith("/"):  # add a trailing slash if it doesn't exist
-            v = f"{v}/"
-        return v
+        return v.rstrip("/") + "/"
 
     def send_notification(self, service, message):
         endpoint = self.bark_endpoint
@@ -25,5 +23,5 @@ class Bark(pydantic.BaseModel):
                 json=message,
             )
             if not response.is_success:
-                return False
+                raise ValueError(f"Failed to send notification: {response.text}")
             return True
