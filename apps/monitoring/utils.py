@@ -1,13 +1,13 @@
 import requests
-from requests.exceptions import RequestException
 
 
 def check_service_status(url):
+    """ "
+    Check if a service is up or down and return the response time
+    """
     try:
-        response = requests.get(url, timeout=5)  # 5 seconds timeout
-        return (
-            True,
-            response.elapsed.total_seconds(),
-        )  # Service is up, return response time
-    except RequestException:
-        return False, None  # Service is down or unreachable
+        response = requests.get(url)
+        response.raise_for_status()
+        return True, response.elapsed.total_seconds()
+    except requests.exceptions.RequestException:
+        return False, 0
