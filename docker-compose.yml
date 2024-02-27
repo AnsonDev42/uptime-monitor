@@ -24,3 +24,15 @@ services:
     restart: always
     ports:
       - 8080:8080
+
+#  set up rabbitmq
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: "rabbitmq"
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: myrabbituser
+      RABBITMQ_DEFAULT_PASS: myrabbitpassword
