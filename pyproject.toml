@@ -17,6 +17,7 @@ markdown = "^3.5.2"
 django-filter = "^23.5"
 requests = "^2.31.0"
 django-celery-beat = { git = "https://github.com/celery/django-celery-beat.git", rev = "f66796b9c5c9e47d118cb5b41d970f07cce72bbe" }
+pre-commit = "^3.6.2"
 
 
 
