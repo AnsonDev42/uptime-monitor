@@ -1,7 +1,7 @@
 # uptime-monitor
-
+This repo is the back end implementation of the following project.
 ### Objectives:
-- a uptime dashboard
+- a uptime dashboard ([Django-backend](https://github.com/AnsonDev42/uptime-monitor) + [NextJS-frontend(Client-Side-Render)](https://github.com/AnsonDev42/uptime-monitor-front)
 - notify user when server is down and when server is restored
 
 ### Scope:
