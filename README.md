@@ -1,8 +1,17 @@
 # uptime-monitor
+This repo is the back-end implementation of the following project.
+
+---
+
+###  Demo
+Click [here](https://uptime-monitor-front.pages.dev)
+
+---
 
 ### Objectives:
-- a uptime dashboard
+- a uptime dashboard ([Django-backend](https://github.com/AnsonDev42/uptime-monitor) + [NextJS-frontend(Client-Side-Render) in **TypeScript**](https://github.com/AnsonDev42/uptime-monitor-front)
 - notify user when server is down and when server is restored
+
 
 ### Scope:
 - support system services (smb, shairport)
