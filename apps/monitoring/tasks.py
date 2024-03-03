@@ -1,9 +1,8 @@
 from celery import shared_task
-from .models import Service
+from .models import Service, UptimeRecord
 from apps.notification.models import NotificationChannel, NotificationLog
 from .utils import check_service_status
-
-# logger = get_task_logger(__name__)
+# logger = get_task_logger(__nae__)
 # logger_django = logging.getLogger(__name__)
 
 
@@ -14,7 +13,13 @@ def check_all_services_status():
     # logger.inf("Checking all services status")
     # logger_django.info("Checking all services status")
     for service in Service.objects.all():
-        is_up, response_time = check_service_status(service.monitoring_endpoint)
+        is_up, response_time, error_message = check_service_status(
+            service.monitoring_endpoint
+        )
+        UptimeRecord.objects.create(
+            status=is_up, response_time=response_time, error_message=error_message
+        )
+
         if not is_up:
             message = f"Service {service.name} is down."
             channels = NotificationChannel.objects.all()  # Example: Notify all channels
