@@ -10,7 +10,7 @@ def check_service_status(url):
         response.raise_for_status()
         return True, response.elapsed.total_seconds() * 1000, None
     except requests.exceptions.RequestException as e:
-        return False, 0, e
+        return False, 0, f"Error response: {e.response}"
 
 
 if __name__ == "__main__":
