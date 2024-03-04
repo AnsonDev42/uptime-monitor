@@ -30,9 +30,13 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
             "monitoring_type",
             "periodic_task_id",
             "periodic_task",
+            "updated_at",
         )
 
-        extra_kwargs = {"periodic_task": {"required": False}}
+        extra_kwargs = {
+            "periodic_task": {"required": False},
+            "updated_at": {"read_only": True},
+        }
 
     def validate(self, data):
         """
