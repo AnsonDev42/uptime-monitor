@@ -20,6 +20,7 @@ django-celery-beat = { git = "https://github.com/celery/django-celery-beat.git",
 pre-commit = "^3.6.2"
 django-cors-headers = "^4.3.1"
 python-dotenv = "^1.0.1"
+dj-rest-auth = "^5.0.2"
 
 
 

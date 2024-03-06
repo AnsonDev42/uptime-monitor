@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "apps.service",
     "apps.notification",
     "rest_framework",
+    "rest_framework.authtoken",
+    "dj_rest_auth",
     "django_celery_beat",
     "corsheaders",
 ]

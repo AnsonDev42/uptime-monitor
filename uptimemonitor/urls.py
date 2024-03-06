@@ -36,6 +36,7 @@ router.register(r"uptime", UptimeRecordViewSet)
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls"), name="rest_framework"),
+    path("dj-rest-auth/", include("dj_rest_auth.urls")),
 ]
 
 urlpatterns += router.urls
