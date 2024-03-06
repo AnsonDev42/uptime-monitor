@@ -27,9 +27,6 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "not-safe")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,8 +54,13 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+ALLOWED_HOSTS = []
 
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost").split(" ")
+CSRF_TRUSTED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(
+    " "
+)
+CORS_ALLOWED_CREDENTIALS = True
 
 ROOT_URLCONF = "uptimemonitor.urls"
 
@@ -142,7 +144,8 @@ REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+        # "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly",
     ]
 }
 
