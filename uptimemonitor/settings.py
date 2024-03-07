@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = Path(".env.dev")
 load_dotenv(dotenv_path=dotenv_path)
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -56,12 +55,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost").split(" ")
-CSRF_TRUSTED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(
-    " "
-)
+CSRF_TRUSTED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost").split(" ")
 CORS_ALLOWED_CREDENTIALS = True
 
 ROOT_URLCONF = "uptimemonitor.urls"
@@ -146,10 +143,17 @@ REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+        # "rest_framework.permissions.IsAuthenticated",
+        # "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
         # "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly",
-    ]
+        "rest_framework.authentication.TokenAuthentication",
+    ],
 }
+REST_SESSION_LOGIN = False
+
 
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
