@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from .models import Service
 from ..monitoring.serializers import PeriodicTaskSerializer
+from ..notification.models import NotificationChannel
 
 
 def get_periodic_task_choices():
@@ -17,7 +18,16 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         allow_null=True,
         required=False,
     )
-    periodic_task = serializers.JSONField(write_only=True, required=False)
+    periodic_task = serializers.JSONField(
+        write_only=True, required=False, allow_null=True
+    )
+    notification_channel = serializers.PrimaryKeyRelatedField(
+        queryset=NotificationChannel.objects.all(),
+        many=True,
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = Service
@@ -36,6 +46,7 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         extra_kwargs = {
             "periodic_task": {"required": False},
             "updated_at": {"read_only": True},
+            "notification_channel": {"required": False, "allow_null": True},
         }
 
     def validate(self, data):
@@ -72,7 +83,11 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         service = Service.objects.create(**validated_data, periodic_task=periodic_task)
         if notification_channels_data:
             # Assuming notification_channels_data is a list of PKs
-            service.notification_channel.set(notification_channels_data)
+            # e.g. [1,3]
+            notification_channels = NotificationChannel.objects.filter(
+                id__in=notification_channels_data
+            )
+            service.notification_channel.set(notification_channels)
 
         return service
 
