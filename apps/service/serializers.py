@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from .models import Service
-from ..monitoring.serializers import PeriodicTaskSerializer
-from ..notification.models import NotificationChannel
+from apps.service.models import Service
+from apps.monitoring.serializers import PeriodicTaskSerializer
+from apps.notification.models import NotificationChannel
 
 
 class ServiceSerializer(serializers.HyperlinkedModelSerializer):
