@@ -14,12 +14,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from apps.notification.views import NotificationChannelViewSet
 from apps.service.views import ServiceViewSet
-from apps.monitoring.views import IntervalScheduleViewSet, PeriodicTaskViewSet
+from apps.monitoring.views import (
+    IntervalScheduleViewSet,
+    PeriodicTaskViewSet,
+    UptimeRecordViewSet,
+)
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
@@ -27,10 +32,12 @@ router.register(r"notify", NotificationChannelViewSet)
 router.register(r"service", ServiceViewSet)
 router.register(r"beat", IntervalScheduleViewSet)
 router.register(r"task", PeriodicTaskViewSet)
+router.register(r"uptime", UptimeRecordViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls"), name="rest_framework"),
+    path("dj-rest-auth/", include("dj_rest_auth.urls")),
 ]
 
 urlpatterns += router.urls

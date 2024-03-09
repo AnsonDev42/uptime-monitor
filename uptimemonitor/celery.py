@@ -1,13 +1,17 @@
 import os
 
 from celery import Celery
+from dotenv import load_dotenv
+from pathlib import Path
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "uptimemonitor.settings")
-
+dotenv_path = Path(".env.dev")
+load_dotenv(dotenv_path=dotenv_path)
 app = Celery(
     "uptimemonitor",
-    broker="amqp://myrabbituser:myrabbitpassword@localhost:5672//",
+    broker=f"amqp://{os.getenv("RABBITMQ_DEFAULT_USER", "myrabbituser")}:"
+    f"{os.getenv("RABBITMQ_DEFAULT_PASS", "myrabbitpassword")}@{os.getenv("RABBITMQ_URL", "localhost:5672")}//",
 )
 
 # Using a string here means the worker doesn't have to serialize

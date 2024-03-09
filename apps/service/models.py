@@ -1,4 +1,5 @@
 from django.db import models
+from django_celery_beat.models import PeriodicTask
 
 
 class monitoring_type(models.TextChoices):
@@ -23,6 +24,9 @@ class Service(models.Model):
     )
     monitoring_type = models.CharField(
         max_length=50, default="http", choices=monitoring_type.choices
+    )
+    periodic_task = models.OneToOneField(
+        PeriodicTask, on_delete=models.CASCADE, null=True, blank=True
     )
 
     def __str__(self):

@@ -11,4 +11,4 @@ class UptimeRecord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.service.name} - {'Up' if self.status else 'Down'} at {self.checked_at}"
+        return f"{self.service.name} - {'Up' if self.status else 'Down'} at {self.check_at}"
