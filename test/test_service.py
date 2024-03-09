@@ -21,7 +21,7 @@ def periodic_task_data():
     return {
         "name": "Test Task",
         "task": "apps.monitoring.tasks.check_monitor_services_status",
-        "kwargs": '{"service_id": 1}',
+        # "kwargs": {},
         "interval": {
             "every": 10,
             "period": "seconds",

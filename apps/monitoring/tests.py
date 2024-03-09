@@ -52,6 +52,6 @@ class PeriodicTaskSerializerTest(TestCase):
         self.assertEqual(periodic_task.interval.every, self.interval.every)
         self.assertEqual(periodic_task.interval.period, self.interval.period)
 
-    def test_invalid_serializer_data(self):
+    def test_valid_serializer_data_null_periodic_task(self):
         # Similar to the above, but provide invalid data and assert serializer.is_valid() is False
         pass

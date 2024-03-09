@@ -66,6 +66,10 @@ class PeriodicTaskSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         interval_data = validated_data.pop("interval")
+        if not IntervalScheduleSerializer(data=interval_data).is_valid(
+            raise_exception=True
+        ):
+            raise serializers.ValidationError("Invalid interval data")
         interval = IntervalSchedule.objects.create(**interval_data)
         start_time = now()
         periodic_task = PeriodicTask.objects.create(

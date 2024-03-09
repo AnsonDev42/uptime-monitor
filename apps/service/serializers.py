@@ -1,8 +1,37 @@
 from rest_framework import serializers
+from rest_framework.utils import json
 
 from apps.service.models import Service
-from apps.monitoring.serializers import PeriodicTaskSerializer
+from apps.monitoring.serializers import (
+    PeriodicTaskSerializer,
+    IntervalScheduleSerializer,
+)
 from apps.notification.models import NotificationChannel
+
+
+def create_periodic_task(task_data):
+    # Assuming 'IntervalScheduleSerializer' and related models are properly imported
+    # Deserialize the task data to create a new PeriodicTask
+
+    if "interval" in task_data and isinstance(task_data["interval"], dict):
+        interval_data = task_data.pop("interval")
+        interval_serializer = IntervalScheduleSerializer(data=interval_data)
+        if interval_serializer.is_valid(raise_exception=True):
+            interval = interval_serializer.save()
+        else:
+            raise ValueError("Invalid 'interval' data for PeriodicTask creation.")
+    else:
+        # Handle cases where 'interval' data might be missing or invalid
+        raise ValueError(
+            "Invalid or missing 'interval' data for PeriodicTask creation."
+        )
+
+    serializer = PeriodicTaskSerializer(data={**task_data, "interval": interval})
+    if serializer.is_valid(raise_exception=True):
+        periodic_task = serializer.save()
+        return periodic_task
+    else:
+        return None
 
 
 class ServiceSerializer(serializers.HyperlinkedModelSerializer):
@@ -35,54 +64,50 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
             "notification_channel": {"required": False, "allow_null": True},
         }
 
-    def validate_periodic_task_data(self, value):
-        """
-        Validate the periodic_task_data to ensure it can create a valid PeriodicTask.
-        """
-        # Use the PeriodicTaskSerializer or similar logic to validate the incoming data
-        serializer = PeriodicTaskSerializer(data=value)
-        if not serializer.is_valid():
-            raise serializers.ValidationError("Invalid periodic task data.")
-        return value
-
     def create(self, validated_data):
         periodic_task_data = validated_data.pop("periodic_task_data", None)
         notification_channels_data = validated_data.pop("notification_channel", [])
-
-        # Create or link the PeriodicTask here
-        if periodic_task_data:
-            periodic_task_serializer = PeriodicTaskSerializer(data=periodic_task_data)
-            if periodic_task_serializer.is_valid(raise_exception=True):
-                periodic_task = periodic_task_serializer.save()
-                validated_data["periodic_task"] = periodic_task
 
         service = Service.objects.create(**validated_data)
 
         if notification_channels_data:
             service.notification_channel.set(notification_channels_data)
 
+        if periodic_task_data:
+            periodic_task_data["kwargs"] = json.dumps(
+                {"service_id": service.id}
+            )  # Update this line based on the task argument structure
+            periodic_task_serializer = PeriodicTaskSerializer(data=periodic_task_data)
+            if periodic_task_serializer.is_valid(raise_exception=True):
+                periodic_task = periodic_task_serializer.save()
+                service.periodic_task = (
+                    periodic_task  # Bind the PeriodicTask to the Service
+                )
+                service.save()
+
         return service
 
     def update(self, instance, validated_data):
-        # Assuming you may want to update periodic task data as well
         periodic_task_data = validated_data.pop("periodic_task_data", None)
-
-        if periodic_task_data:
-            # Update the existing PeriodicTask, if it exists
-            periodic_task_serializer = PeriodicTaskSerializer(
-                instance.periodic_task, data=periodic_task_data
-            )
-            if periodic_task_serializer.is_valid(raise_exception=True):
-                periodic_task_serializer.save()
-
         notification_channels_data = validated_data.pop("notification_channel", [])
-        if notification_channels_data:
-            instance.notification_channel.set(notification_channels_data)
-
         # Update other fields of Service
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        if notification_channels_data:
+            instance.notification_channel.set(notification_channels_data)
+
+        if periodic_task_data:
+            if hasattr(instance, "periodic_task") and instance.periodic_task:
+                periodic_task = instance.periodic_task
+            else:
+                # Assuming you have a default creation mechanism or a similar function available
+                periodic_task = create_periodic_task(instance, periodic_task_data)
+                instance.periodic_task = periodic_task
+                instance.save()
+
+                # Now, update the periodic_task instance with new data
+            PeriodicTaskSerializer().update(periodic_task, periodic_task_data)
 
         return instance
 

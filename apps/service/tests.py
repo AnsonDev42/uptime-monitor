@@ -37,7 +37,7 @@ class ServiceSerializerCreateTest(TestCase):
         cls.periodic_task_data = {
             "name": "Test Task",
             "task": "apps.monitoring.tasks.check_monitor_services_status",
-            "kwargs": '{"service_id": 1}',
+            # "kwargs":'{"service_id": 1}',
             "interval": {
                 "every": 10,
                 "period": "seconds",
@@ -97,3 +97,35 @@ class ServiceSerializerCreateTest(TestCase):
         self.assertEqual(
             service.notification_channel.first().id, self.notification_channel.id
         )
+
+    def test_create_service_with_null_periodic_task_data(self):
+        """Test service creation with null periodic_task data."""
+        data = {
+            "name": "test b",
+            "description": "test",
+            "monitoring_endpoint": "http://localhost:8000/service/",
+            "is_active": True,
+            "notification_channel": [],
+            "monitoring_type": "http",
+            "periodic_task_data": None,
+        }
+        serializer = ServiceSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        service = serializer.save()
+        self.assertIsNone(service.periodic_task)
+        self.assertEqual(service.name, "test b")
+
+    def test_create_service_with_invalid_periodic_task_data(self):
+        data = {
+            "name": "test b",
+            "description": "test",
+            "monitoring_endpoint": "http://localhost:8000/service/",
+            "is_active": True,
+            "notification_channel": [],
+            "monitoring_type": "http",
+            "periodic_task_data": {"name": "Test Task", "interval": "daily"},
+        }
+
+        serializer = ServiceSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("every", serializer.errors)
