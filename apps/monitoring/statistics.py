@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.db.models import Avg
 from django.utils.timezone import now
 
 from apps.monitoring.models import UptimeRecord
@@ -20,23 +21,24 @@ def calculate_past(time_range=None):
     Given an time range in HOUR?DATE, query all UptimeRecord and
     calculate uptime percentage and the average response time
 
-    :return: uptime_percentage and avg_response_time
+    :return:total_records, uptime_percentage and avg_response_time
     """
-
     uptime_percentage, avg_response_time = None, None
-    if not time_range or time_range.value not in QUERY_TIME_RANGE_TYPE.keys():
+    if (not time_range) or (time_range not in QUERY_TIME_RANGE_TYPE.keys()):
         return uptime_percentage and avg_response_time
-    time_delta = time_range.value
+    time_delta = time_range
     results = UptimeRecord.objects.filter(
         created_at__gte=now() - timedelta(hours=time_delta)
     )
-    # results = UptimeRecord.objects.filter(created_at? range)
-    sum_avg_time, sum_uptime = 0, 0
     total_records = results.count()
-    for record in results:
-        sum_avg_time += record.response_time
-        sum_uptime += 1 if record.status else 0
-    if total_records:
-        avg_response_time = sum_avg_time / total_records
-        uptime_percentage = (sum_uptime / total_records) * 100
-    return uptime_percentage, avg_response_time
+    up_records = results.filter(status=True).count()
+    average_response_time = (
+        results.filter(status=True).aggregate(Avg("response_time"))[
+            "response_time__avg"
+        ]
+        or 0
+    )
+
+    uptime_percentage = (up_records / total_records) * 100 if total_records else 0
+
+    return total_records, uptime_percentage, average_response_time

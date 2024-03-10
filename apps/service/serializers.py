@@ -49,6 +49,7 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Service
         fields = (
+            "id",
             "name",
             "description",
             "monitoring_endpoint",
