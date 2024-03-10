@@ -71,6 +71,10 @@ def test_create_service_with_periodic_task_data(periodic_task_data):
     service = serializer.save()
     assert service.periodic_task is not None
     assert service.periodic_task.name == "Test Task"
+    assert (
+        service.periodic_task.interval.every == 10
+    ), service.periodic_task.interval.every
+    assert service.periodic_task.interval.period == "seconds"
 
 
 @pytest.mark.django_db
