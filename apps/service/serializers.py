@@ -67,23 +67,31 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         periodic_task_data = validated_data.pop("periodic_task_data", None)
         notification_channels_data = validated_data.pop("notification_channel", [])
-
+        interval_data = periodic_task_data.pop("interval", None)
         service = Service.objects.create(**validated_data)
 
         if notification_channels_data:
             service.notification_channel.set(notification_channels_data)
 
-        if periodic_task_data:
-            periodic_task_data["kwargs"] = json.dumps(
-                {"service_id": service.id}
-            )  # Update this line based on the task argument structure
-            periodic_task_serializer = PeriodicTaskSerializer(data=periodic_task_data)
-            if periodic_task_serializer.is_valid(raise_exception=True):
-                periodic_task = periodic_task_serializer.save()
-                service.periodic_task = (
-                    periodic_task  # Bind the PeriodicTask to the Service
-                )
-                service.save()
+        if not periodic_task_data or not interval_data:
+            raise ValueError(
+                "Invalid or missing 'periodic_task_data' for Service creation."
+            )
+        # create interval schedule
+        interval_serializer = IntervalScheduleSerializer(data=interval_data)
+        if not interval_serializer.is_valid(raise_exception=True):
+            raise ValueError("Invalid 'interval' data for PeriodicTask creation.")
+        # overwrite periodic_task_data kwargs with service id
+        periodic_task_data["kwargs"] = json.dumps({"service_id": service.id})
+        # create periodic task
+        periodic_task_data["interval"] = interval_data
+        periodic_task_serializer = PeriodicTaskSerializer(data=periodic_task_data)
+        if periodic_task_serializer.is_valid(raise_exception=True):
+            periodic_task = periodic_task_serializer.save()
+            service.periodic_task = (
+                periodic_task  # Bind the PeriodicTask to the Service
+            )
+            service.save()
 
         return service
 
