@@ -4,13 +4,17 @@ from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import UptimeRecord
-from .serializers import (
+from apps.monitoring.models import UptimeRecord
+from apps.monitoring.serializers import (
     IntervalScheduleSerializer,
     PeriodicTaskSerializer,
     UptimeRecordSerializer,
 )
-from .statistics import QUERY_TIME_RANGE_TYPE, calculate_past
+from apps.monitoring.statistics import (
+    QUERY_TIME_RANGE_TYPE,
+    calculate_past_summary,
+    calculate_past_chart,
+)
 
 
 class IntervalScheduleViewSet(viewsets.ModelViewSet):
@@ -39,9 +43,11 @@ class UptimeRecordViewSet(viewsets.ModelViewSet):
 
         # Apply time_range if specified and valid
         if time_range in QUERY_TIME_RANGE_TYPE:
-            total_records, uptime_percentage, average_response_time = calculate_past(
-                time_range=time_range
-            )
+            (
+                total_records,
+                uptime_percentage,
+                average_response_time,
+            ) = calculate_past_summary(time_range=time_range)
         else:
             # Calculate for all time if time_range not specified or invalid
             total_records = queryset.count()
@@ -62,4 +68,13 @@ class UptimeRecordViewSet(viewsets.ModelViewSet):
             "average_response_time": average_response_time,
         }
 
+        return Response(data)
+
+    @action(detail=False, methods=["get"])
+    def chart(self, request):
+        time_range = int(request.query_params.get("time_range", 1))
+        if time_range not in QUERY_TIME_RANGE_TYPE:
+            return Response({"error": "Invalid time range"}, status=400)
+
+        data = calculate_past_chart(time_range=time_range)
         return Response(data)

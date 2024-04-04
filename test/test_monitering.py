@@ -169,3 +169,11 @@ def test_uptime_record_creation(api_client, test_service):
     response = api_client.get(f"/uptime/?service_id={test_service.id}")
     assert response.status_code == status.HTTP_200_OK
     assert len(response.data) == 2
+    assert response.data[0]["service"] == test_service.id
+    #     / uptime / stats /?service_id = 17
+
+    response = api_client.get(f"/uptime/stats/?service_id={test_service.id}")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["total_records"] == 2
+    assert response.data["uptime_percentage"] == 100.0
+    assert response.data["average_response_time"] == 100.0
