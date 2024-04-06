@@ -13,6 +13,7 @@ QUERY_TIME_RANGE_TYPE = {
     24: "Last 24 hours",
     168: "Last 7 days",
     720: "Last 30 days",
+    -1: "All time",
 }
 
 
@@ -44,7 +45,7 @@ def calculate_past_summary(time_range=None):
     return total_records, uptime_percentage, average_response_time
 
 
-def calculate_past_chart(time_range=None):
+def calculate_past_chart(time_range, split_interval):
     """
     Given a time range in HOUR, query all UptimeRecord and
     calculate uptime_percentage and the average_response_time in the interval for chart,
@@ -57,12 +58,14 @@ def calculate_past_chart(time_range=None):
     if (not time_range) or (time_range not in QUERY_TIME_RANGE_TYPE.keys()):
         return KeyError("Invalid time range")
     # iterate 30 intervals in the given time range
-    delta = timedelta(hours=time_range / 30)
+    if split_interval < 1:
+        split_interval = 1
+    delta = timedelta(hours=time_range / split_interval)
     start_time = now() - timedelta(hours=time_range)
     total_records, total_up_records = 0, 0
     all_results = []
     total_avg_response_time = []
-    for _ in range(30):
+    for _ in range(split_interval):
         end_time = start_time + delta
         results = UptimeRecord.objects.filter(
             created_at__gte=start_time, created_at__lt=end_time
@@ -77,14 +80,12 @@ def calculate_past_chart(time_range=None):
         )
         all_results.append(
             {
-                "total_records": interval_total_records,
                 "uptime_percentage": (interval_up_records / interval_total_records)
                 * 100
                 if interval_total_records
                 else 0,
                 "average_response_time": average_response_time,
-                "time_start": start_time,
-                "time_end": end_time,
+                "time_start": start_time.strftime("%b. %-d, %H:%M"),
             }
         )
         total_records += interval_total_records
@@ -96,14 +97,16 @@ def calculate_past_chart(time_range=None):
         total_avg_response_time
     )
     uptime_percentage = (total_up_records / total_records) * 100 if total_records else 0
-    all_results.insert(
-        0,
-        {
-            "total_records": total_records,
-            "uptime_percentage": uptime_percentage,
-            "average_response_time": total_avg_response_time,
-            "time_start": now() - timedelta(hours=time_range),
-            "time_end": now(),
-        },
-    )
-    return all_results
+    summary = {
+        "time_range": time_range,
+        "total_records": total_records,
+        "uptime_percentage": uptime_percentage,
+        "average_response_time": total_avg_response_time,
+        "time_start": (now() - timedelta(hours=time_range)).strftime("%b. %-d, %H:%M"),
+        "time_end": now().strftime("%b. %-d, %H:%M"),
+    }
+    response = {
+        "summary": summary,
+        "data": all_results,
+    }
+    return response
