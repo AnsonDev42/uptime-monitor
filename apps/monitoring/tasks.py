@@ -40,6 +40,10 @@ def check_monitor_services_status(service_id=None):
                 service=service, message=message, was_success=was_success
             )
     else:
+        # check the last three records are up or not, if all up, do not send notification
+        records = UptimeRecord.objects.filter(service=service).order_by("-check_at")[:3]
+        if len(records) == 3 and all(record.status for record in records):
+            return
         message = f"Service {service.name} is up."
         channels = NotificationChannel.objects.all()  # Example: Notify all channels
         for channel in channels:
