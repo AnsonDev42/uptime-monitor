@@ -1,10 +1,10 @@
 from datetime import timedelta
 
 from django.db.models import Avg
+from django.utils import timezone
 from django.utils.timezone import now
 
 from apps.monitoring.models import UptimeRecord
-
 
 QUERY_TIME_RANGE_TYPE = {
     1: "Last 1 hour",
@@ -55,6 +55,7 @@ def calculate_past_chart(time_range, split_interval):
     where each record contains total_records, uptime_percentage, average_response_time, time_start and time_end
 
     """
+
     if (not time_range) or (time_range not in QUERY_TIME_RANGE_TYPE.keys()):
         return KeyError("Invalid time range")
     # iterate 30 intervals in the given time range
@@ -65,6 +66,7 @@ def calculate_past_chart(time_range, split_interval):
     total_records, total_up_records = 0, 0
     all_results = []
     total_avg_response_time = []
+
     for _ in range(split_interval):
         end_time = start_time + delta
         results = UptimeRecord.objects.filter(
@@ -85,7 +87,7 @@ def calculate_past_chart(time_range, split_interval):
                 if interval_total_records
                 else 0,
                 "average_response_time": average_response_time,
-                "time_start": start_time.strftime("%b. %-d, %H:%M"),
+                "time_start": timezone.localtime(end_time).strftime("%b. %-d, %H:%M"),
             }
         )
         total_records += interval_total_records
@@ -97,13 +99,14 @@ def calculate_past_chart(time_range, split_interval):
         total_avg_response_time
     )
     uptime_percentage = (total_up_records / total_records) * 100 if total_records else 0
+
     summary = {
         "time_range": time_range,
         "total_records": total_records,
         "uptime_percentage": uptime_percentage,
         "average_response_time": total_avg_response_time,
-        "time_start": (now() - timedelta(hours=time_range)).strftime("%b. %-d, %H:%M"),
-        "time_end": now().strftime("%b. %-d, %H:%M"),
+        "time_start": timezone.localtime(now()).strftime("%b. %-d, %H:%M"),
+        "time_end": timezone.localtime(now()).strftime("%b. %-d, %H:%M"),
     }
     response = {
         "summary": summary,
