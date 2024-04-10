@@ -4,7 +4,6 @@ LABEL authors="AnsonDev42"
 WORKDIR /src/app
 RUN apt-get -y update; apt-get -y install curl
 RUN apt-get install -y --no-install-recommends python3-dev libpq-dev gcc
-COPY requirements.txt requirements.txt
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 RUN python get-pip.py
 RUN pip install poetry

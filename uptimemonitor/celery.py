@@ -7,11 +7,14 @@ from pathlib import Path
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "uptimemonitor.settings")
 dotenv_path = Path(".env.dev")
-load_dotenv(dotenv_path=dotenv_path)
+
+print("could not load .env.dev file for CELERY!") if not load_dotenv(
+    dotenv_path=dotenv_path
+) else print("found .env.dev file for CELERY!")
 app = Celery(
     "uptimemonitor",
     broker=f"amqp://{os.getenv("RABBITMQ_DEFAULT_USER", "myrabbituser")}:"
-    f"{os.getenv("RABBITMQ_DEFAULT_PASS", "myrabbitpassword")}@{os.getenv("RABBITMQ_URL", "localhost:5672")}//",
+    f"{os.getenv("RABBITMQ_DEFAULT_PASS", "myrabbitpassword")}@{os.getenv("RABBITMQ_URL", "rabbitmq:5672")}//",
 )
 
 # Using a string here means the worker doesn't have to serialize

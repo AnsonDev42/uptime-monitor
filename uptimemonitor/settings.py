@@ -17,6 +17,9 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = Path(".env.dev")
+print("could not find .env.dev file") if not dotenv_path.exists() else print(
+    "found .env.dev file"
+)
 load_dotenv(dotenv_path=dotenv_path)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -90,7 +93,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DATABASE_NAME", "mydatabase"),
-        "USER": os.getenv("DATABASE_USER", "myuser"),
+        "USER": os.getenv("DATABASE_USER", "mydatabaseuser"),
         "PASSWORD": os.getenv("DATABASE_PASSWORD", "mypassword"),
         "HOST": os.getenv("DATABASE_URL", "db"),
         "PORT": os.getenv("DATABASE_PORT", "5432"),
