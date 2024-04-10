@@ -1,6 +1,7 @@
 # uptime-monitor
+[![Docker Image CI](https://github.com/AnsonDev42/uptime-monitor/actions/workflows/docker-image.yml/badge.svg)](https://github.com/AnsonDev42/uptime-monitor/actions/workflows/docker-image.yml)
+---
 This repo is the back-end implementation of the following project.
-
 ---
 
 ###  Demo
