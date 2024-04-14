@@ -13,6 +13,7 @@ from apps.monitoring.statistics import (
     QUERY_TIME_RANGE_TYPE,
     calculate_past_summary,
     calculate_past_chart,
+    calculate_trackers_by_status,
 )
 
 
@@ -62,4 +63,9 @@ class UptimeRecordViewSet(viewsets.ModelViewSet):
         data = calculate_past_chart(
             time_range=time_range, split_interval=split_interval
         )
+        return Response(data)
+
+    @action(detail=False, methods=["get"])
+    def trackers(self, request):
+        data = calculate_trackers_by_status()
         return Response(data)
