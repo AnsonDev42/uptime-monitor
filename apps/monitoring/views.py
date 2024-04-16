@@ -33,7 +33,6 @@ class UptimeRecordViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def stats(self, request):
-        # service_id = request.query_params.get("service_id")
         time_range = int(request.query_params.get("time_range", 1))
 
         # Apply time_range if specified and valid
@@ -57,12 +56,14 @@ class UptimeRecordViewSet(viewsets.ModelViewSet):
     def chart(self, request):
         time_range = int(request.query_params.get("time_range", 1))
         split_interval = int(request.query_params.get("split_interval", 6))
+        service_id = request.query_params.get("service_id")
         if time_range not in QUERY_TIME_RANGE_TYPE:
             return Response({"error": "Invalid time range"}, status=400)
 
         data = calculate_past_chart(
-            time_range=time_range, split_interval=split_interval
+            time_range=time_range, split_interval=split_interval, service_id=service_id
         )
+
         return Response(data)
 
     @action(detail=False, methods=["get"])

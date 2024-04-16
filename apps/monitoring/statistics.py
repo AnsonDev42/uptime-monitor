@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.timezone import now
 
 from apps.monitoring.models import UptimeRecord
+from apps.service.models import Service
 
 QUERY_TIME_RANGE_TYPE = {
     1: "Last 1 hour",
@@ -45,7 +46,7 @@ def calculate_past_summary(time_range=None):
     return total_records, uptime_percentage, average_response_time
 
 
-def calculate_past_chart(time_range, split_interval):
+def calculate_past_chart(time_range, split_interval, service_id=None):
     """
     Given a time range in HOUR, query all UptimeRecord and
     calculate uptime_percentage and the average_response_time in the interval for chart,
@@ -55,6 +56,10 @@ def calculate_past_chart(time_range, split_interval):
     where each record contains total_records, uptime_percentage, average_response_time, time_start and time_end
 
     """
+    if not service_id or not Service.objects.filter(id=service_id).exists():
+        return KeyError("Invalid service id")
+    service_name = Service.objects.get(id=service_id).name
+    monitoring_method = Service.objects.get(id=service_id).monitoring_type
 
     if (not time_range) or (time_range not in QUERY_TIME_RANGE_TYPE.keys()):
         return KeyError("Invalid time range")
@@ -100,8 +105,13 @@ def calculate_past_chart(time_range, split_interval):
     )
     uptime_percentage = (total_up_records / total_records) * 100 if total_records else 0
 
+    # format the uptime_percentage and total_avg_response_time
+    uptime_percentage = round(uptime_percentage, 2)
+    total_avg_response_time = round(total_avg_response_time, 0)
     summary = {
-        "time_range": time_range,
+        "service_name": service_name,
+        "monitoring_method": monitoring_method.upper(),
+        "errors": total_records - total_up_records,
         "total_records": total_records,
         "uptime_percentage": uptime_percentage,
         "average_response_time": total_avg_response_time,
