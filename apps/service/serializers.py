@@ -67,6 +67,10 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
 
     def create(self, validated_data):
         periodic_task_data = validated_data.pop("periodic_task_data", None)
+        if not periodic_task_data:
+            raise ValueError(
+                "Invalid or missing 'periodic_task_data' for Service creation."
+            )
         notification_channels_data = validated_data.pop("notification_channel", [])
         interval_data = periodic_task_data.pop("interval", None)
         service = Service.objects.create(**validated_data)
@@ -86,6 +90,10 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         periodic_task_data["kwargs"] = json.dumps({"service_id": service.id})
         # create periodic task
         periodic_task_data["interval"] = interval_data
+        periodic_task_data["task"] = (
+            "apps.monitoring.tasks.check_monitor_services_status"
+        )
+        periodic_task_data["name"] = f"Check service {service.name}"
         periodic_task_serializer = PeriodicTaskSerializer(data=periodic_task_data)
         if periodic_task_serializer.is_valid(raise_exception=True):
             periodic_task = periodic_task_serializer.save()
