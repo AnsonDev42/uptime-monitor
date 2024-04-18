@@ -78,17 +78,12 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         if notification_channels_data:
             service.notification_channel.set(notification_channels_data)
 
-        if not periodic_task_data or not interval_data:
-            raise ValueError(
-                "Invalid or missing 'periodic_task_data' for Service creation."
-            )
         # create interval schedule
         interval_serializer = IntervalScheduleSerializer(data=interval_data)
         if not interval_serializer.is_valid(raise_exception=True):
             raise ValueError("Invalid 'interval' data for PeriodicTask creation.")
         # overwrite periodic_task_data kwargs with service id
         periodic_task_data["kwargs"] = json.dumps({"service_id": service.id})
-        # create periodic task
         periodic_task_data["interval"] = interval_data
         periodic_task_data["task"] = (
             "apps.monitoring.tasks.check_monitor_services_status"
@@ -105,27 +100,39 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         return service
 
     def update(self, instance, validated_data):
+        # Extract nested data
         periodic_task_data = validated_data.pop("periodic_task_data", None)
         notification_channels_data = validated_data.pop("notification_channel", [])
-        # Update other fields of Service
+
+        # Update the Service fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.save()
-        if notification_channels_data:
+
+        # Update the NotificationChannel relationships
+        if notification_channels_data is not None:
             instance.notification_channel.set(notification_channels_data)
 
+        # If there's periodic_task_data, handle updating or creating the PeriodicTask
         if periodic_task_data:
-            if hasattr(instance, "periodic_task") and instance.periodic_task:
-                periodic_task = instance.periodic_task
-            else:
-                # Assuming you have a default creation mechanism or a similar function available
-                periodic_task = create_periodic_task(instance, periodic_task_data)
-                instance.periodic_task = periodic_task
-                instance.save()
+            periodic_task = instance.periodic_task
+            interval_data = periodic_task_data.pop("interval", None)
+            if interval_data:
+                # Here we only update interval data
+                interval_serializer = IntervalScheduleSerializer(
+                    periodic_task.interval, data=interval_data, partial=True
+                )
+                if interval_serializer.is_valid(raise_exception=True):
+                    interval_serializer.save()
 
-                # Now, update the periodic_task instance with new data
-            PeriodicTaskSerializer().update(periodic_task, periodic_task_data)
+                # Update other periodic task data if provided
+            periodic_task_serializer = PeriodicTaskSerializer(
+                periodic_task, data=periodic_task_data, partial=True
+            )
+            if periodic_task_serializer.is_valid(raise_exception=True):
+                periodic_task_serializer.save()
 
+        # Save the updated service instance
+        instance.save()
         return instance
 
     def to_representation(self, instance):
@@ -137,6 +144,8 @@ class ServiceSerializer(serializers.HyperlinkedModelSerializer):
         if instance.periodic_task:
             representation["periodic_task"] = {
                 "id": instance.periodic_task.id,
+                "every": instance.periodic_task.interval.every,
+                "period": instance.periodic_task.interval.period,
                 "name": getattr(
                     instance.periodic_task, "name", "Unnamed Task"
                 ),  # Example field
