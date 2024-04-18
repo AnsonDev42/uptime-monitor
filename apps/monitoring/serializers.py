@@ -21,8 +21,14 @@ choices = (
 
 
 class PeriodicTaskSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(required=False, allow_blank=True)
+    # task = serializers.CharField(required=False, allow_blank=True)
     task = serializers.ChoiceField(
         choices=choices,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        default="apps.monitoring.tasks.check_monitor_services_status",
     )
     interval = IntervalScheduleSerializer()
     kwargs = serializers.JSONField(default={"service_id": 1})

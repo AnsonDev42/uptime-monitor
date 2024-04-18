@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.timezone import now
 
 from apps.monitoring.models import UptimeRecord
+from apps.service.models import Service
 
 QUERY_TIME_RANGE_TYPE = {
     1: "Last 1 hour",
@@ -45,7 +46,7 @@ def calculate_past_summary(time_range=None):
     return total_records, uptime_percentage, average_response_time
 
 
-def calculate_past_chart(time_range, split_interval):
+def calculate_past_chart(time_range, split_interval, service_id=None):
     """
     Given a time range in HOUR, query all UptimeRecord and
     calculate uptime_percentage and the average_response_time in the interval for chart,
@@ -55,6 +56,10 @@ def calculate_past_chart(time_range, split_interval):
     where each record contains total_records, uptime_percentage, average_response_time, time_start and time_end
 
     """
+    if not service_id or not Service.objects.filter(id=service_id).exists():
+        return KeyError("Invalid service id")
+    service_name = Service.objects.get(id=service_id).name
+    monitoring_method = Service.objects.get(id=service_id).monitoring_type
 
     if (not time_range) or (time_range not in QUERY_TIME_RANGE_TYPE.keys()):
         return KeyError("Invalid time range")
@@ -100,8 +105,13 @@ def calculate_past_chart(time_range, split_interval):
     )
     uptime_percentage = (total_up_records / total_records) * 100 if total_records else 0
 
+    # format the uptime_percentage and total_avg_response_time
+    uptime_percentage = round(uptime_percentage, 2)
+    total_avg_response_time = round(total_avg_response_time, 0)
     summary = {
-        "time_range": time_range,
+        "service_name": service_name,
+        "monitoring_method": monitoring_method.upper(),
+        "errors": total_records - total_up_records,
         "total_records": total_records,
         "uptime_percentage": uptime_percentage,
         "average_response_time": total_avg_response_time,
@@ -113,3 +123,55 @@ def calculate_past_chart(time_range, split_interval):
         "data": all_results,
     }
     return response
+
+
+def calculate_trackers_by_status():
+    """
+    Query all UptimeRecords and calculate last 30days of tracker status and overall 30days uptime percentage
+    tracker status: if its `Operational`: no downtime in the day; or `Down`: has downtime in the day;
+    `Degraded`: has downtime but not all day
+    :return: a json contains all the service status in the last 30 days;
+    e.g. { service_name1: { uptime: 99.9%, status: { Operational, Operational, Down, Operational ,... Degraded } } }
+
+    """
+
+    # get the last 30 days
+    start_time = now() - timedelta(days=30)
+    results = UptimeRecord.objects.filter(created_at__gte=start_time)
+    all_results = {}
+    for day in range(30):
+        day_results = results.filter(
+            created_at__gte=start_time + timedelta(days=day),
+            created_at__lt=start_time + timedelta(days=day + 1),
+        )
+        for record in day_results:
+            service_name = record.service.name
+            if service_name not in all_results:
+                all_results[service_name] = {
+                    "total_records_by_day": [0] * 30,
+                    "up_records_by_day": [0] * 30,
+                }
+            if record.status:
+                all_results[service_name]["up_records_by_day"][day] += 1
+            all_results[service_name]["total_records_by_day"][day] += 1
+
+    for service_name in all_results:
+        total_records = sum(all_results[service_name]["total_records_by_day"])
+        up_records = sum(all_results[service_name]["up_records_by_day"])
+        uptime_percentage = (up_records / total_records) * 100 if total_records else 0
+        status = []
+        for up, total in zip(
+            all_results[service_name]["up_records_by_day"],
+            all_results[service_name]["total_records_by_day"],
+        ):
+            if up == 0:
+                status.append("Down")
+            elif up == total:
+                status.append("Operational")
+            else:
+                status.append("Degraded")
+        all_results[service_name].pop("total_records_by_day")
+        all_results[service_name].pop("up_records_by_day")
+        all_results[service_name]["uptime_percentage"] = uptime_percentage
+        all_results[service_name]["status"] = status
+    return all_results
