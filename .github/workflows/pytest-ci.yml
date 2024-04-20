@@ -5,7 +5,7 @@ on:
   pull_request:
     branches:
       - "**"
-name: Run tests
+name: Pytest CI
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
