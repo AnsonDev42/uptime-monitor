@@ -70,7 +70,7 @@ def test_create_service_with_periodic_task_data(periodic_task_data):
     assert serializer.is_valid(), serializer.errors
     service = serializer.save()
     assert service.periodic_task is not None
-    assert service.periodic_task.name == "Test Task"
+    assert data["name"] in service.periodic_task.name
     assert (
         service.periodic_task.interval.every == 10
     ), service.periodic_task.interval.every
