@@ -3,7 +3,8 @@ from datetime import timedelta
 from django.db.models import Avg
 from django.utils import timezone
 from django.utils.timezone import now
-
+from django.db.models.functions import TruncDay
+from django.db.models import Count, Case, When, IntegerField
 from apps.monitoring.models import UptimeRecord
 from apps.service.models import Service
 
@@ -125,53 +126,52 @@ def calculate_past_chart(time_range, split_interval, service_id=None):
     return response
 
 
-def calculate_trackers_by_status():
+def calculate_trackers_by_status(days=30) -> dict:
     """
     Query all UptimeRecords and calculate last 30days of tracker status and overall 30days uptime percentage
-    tracker status: if its `Operational`: no downtime in the day; or `Down`: has downtime in the day;
-    `Degraded`: has downtime but not all day
-    :return: a json contains all the service status in the last 30 days;
-    e.g. { service_name1: { uptime: 99.9%, status: { Operational, Operational, Down, Operational ,... Degraded } } }
-
+    tracker status: if its `Operational`: no downtime in the day; or `Down`: has downtime in the day; `Degraded`:
+    has downtime but not all day :return: a json contains all the service status in the last 30 days; e.g. {
+    service_name1: { uptime: 99.9%, status: { Operational, Operational, Down, Operational ,... Degraded } } }
     """
+    start_time = now() - timedelta(days=days)
+    end_time = now()
 
-    # get the last 30 days
-    start_time = now() - timedelta(days=30)
-    results = UptimeRecord.objects.filter(created_at__gte=start_time)
-    all_results = {}
-    for day in range(30):
-        day_results = results.filter(
-            created_at__gte=start_time + timedelta(days=day),
-            created_at__lt=start_time + timedelta(days=day + 1),
+    # Aggregate data at the database level
+    records = (
+        UptimeRecord.objects.filter(
+            created_at__gte=start_time,
+            created_at__lt=end_time,
         )
-        for record in day_results:
-            service_name = record.service.name
-            if service_name not in all_results:
-                all_results[service_name] = {
-                    "total_records_by_day": [0] * 30,
-                    "up_records_by_day": [0] * 30,
-                }
-            if record.status:
-                all_results[service_name]["up_records_by_day"][day] += 1
-            all_results[service_name]["total_records_by_day"][day] += 1
+        .values("service__name", day=TruncDay("created_at"))
+        .annotate(
+            total_records=Count("id"),
+            up_records=Count(
+                Case(When(status=True, then=1), output_field=IntegerField())
+            ),
+        )
+        .order_by("day", "service__name")
+    )
 
-    for service_name in all_results:
-        total_records = sum(all_results[service_name]["total_records_by_day"])
-        up_records = sum(all_results[service_name]["up_records_by_day"])
-        uptime_percentage = (up_records / total_records) * 100 if total_records else 0
-        status = []
-        for up, total in zip(
-            all_results[service_name]["up_records_by_day"],
-            all_results[service_name]["total_records_by_day"],
-        ):
-            if up == 0:
-                status.append("Down")
-            elif up == total:
-                status.append("Operational")
-            else:
-                status.append("Degraded")
-        all_results[service_name].pop("total_records_by_day")
-        all_results[service_name].pop("up_records_by_day")
-        all_results[service_name]["uptime_percentage"] = uptime_percentage
-        all_results[service_name]["status"] = status
-    return all_results
+    # Process data to calculate percentages and statuses
+    results = {}
+    for record in records:
+        service_name = record["service__name"]
+        day_index = (record["day"] - start_time).days
+        if service_name not in results:
+            results[service_name] = {"uptime_percentage": 0, "status": ["Down"] * 30}
+
+        up_percentage = (record["up_records"] / record["total_records"]) * 100
+        if up_percentage == 100:
+            status = "Operational"
+        elif up_percentage > 0:
+            status = "Degraded"
+        else:
+            status = "Down"
+
+        results[service_name]["status"][day_index] = status
+
+    for service_name, data in results.items():
+        total_up_days = sum(1 for status in data["status"] if status != "Down")
+        results[service_name]["uptime_percentage"] = (total_up_days / days) * 100
+
+    return results
