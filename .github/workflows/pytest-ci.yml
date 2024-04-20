@@ -48,14 +48,10 @@ jobs:
         run: |
           python -m pip install poetry
           poetry install
-      - name: Load .env
-        uses: falti/dotenv-action@v1.1.2
-        with:
-          path: .env.dev
       - name: Set environment variables
         run: |
           set -a
-          source path/to/your/.env
+          source .env.dev
           set +a
           env | grep -vE '^(_|PWD|HOME|GITHUB_)' >> $GITHUB_ENV
       - name: Run tests
