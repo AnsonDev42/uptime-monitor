@@ -52,4 +52,10 @@ jobs:
         run: |
           echo "DATABASE_URL=postgresql://mydatabaseuser:mypassword@localhost:5432/mydatabase" >> $GITHUB_ENV
       - name: Run tests
+        env:
+          DATABASE_URL:localhost
+          DATABASE_NAME:mydatabase
+          DATABASE_PORT:5432
+          DATABASE_USER:mydatabaseuser
+          DATABASE_PASSWORD:mypassword
         run: poetry run pytest -vv
