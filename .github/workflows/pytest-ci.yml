@@ -48,14 +48,15 @@ jobs:
         run: |
           python -m pip install poetry
           poetry install
+      - name: Load .env
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          path: .env.dev
       - name: Set environment variables
         run: |
-          echo "DATABASE_URL=postgresql://mydatabaseuser:mypassword@localhost:5432/mydatabase" >> $GITHUB_ENV
+          set -a
+          source path/to/your/.env
+          set +a
+          env | grep -vE '^(_|PWD|HOME|GITHUB_)' >> $GITHUB_ENV
       - name: Run tests
-        env:
-          DATABASE_URL:localhost
-          DATABASE_NAME:mydatabase
-          DATABASE_PORT:5432
-          DATABASE_USER:mydatabaseuser
-          DATABASE_PASSWORD:mypassword
         run: poetry run pytest -vv
