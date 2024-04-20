@@ -1,0 +1,56 @@
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+name: Pytest CI
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test with ${{ matrix.py }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: mydatabaseuser
+          POSTGRES_PASSWORD: mypassword
+          POSTGRES_DB: mydatabase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      matrix:
+        py:
+          - "3.12.2"
+        os:
+          - ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup python for test ${{ matrix.py }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.py }}
+      - name: Install poetry
+        run: |
+          python -m pip install poetry
+          poetry install
+      - name: Set environment variables
+        run: |
+          set -a
+          source .env.dev
+          set +a
+          env | grep -vE '^(_|PWD|HOME|GITHUB_)' >> $GITHUB_ENV
+      - name: Run tests
+        run: poetry run pytest -vv
